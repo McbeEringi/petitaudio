@@ -7,7 +7,7 @@
 <body>
 	<style>
 		:root{background-color:#222;color:#fff;font-family:monospace;}
-		.key{display:inline-block;margin:0;border:1px solid #222;background-color:#8888;width:16px;height:80px;}
+		.key{display:inline-block;margin:0;margin:1px;background-color:#8888;width:16px;height:80px;text-align:center;font-size:9px;user-select:none;-webkit-user-select:none;touch-action:none;}
 	</style>
 	<script src="petitaudio.js"></script>
 	<pre id="log"></pre>
@@ -15,17 +15,13 @@
 	<button id="btn">+.5s delay demo</button>
 	<script>
 		const main=new PetitAudio()
-			.load('test',{
-				base:'https://mcbeeringi.github.io/sky/audio/instr/musicbox/',
-				57:'a3.mp3',
-				63:'ds4.mp3',69:'a4.mp3',
-				75:'ds5.mp3',81:'a5.mp3',
-				87:'ds6.mp3',93:'a6.mp3',
-				99:'ds7.mp3'
+			.set('test',{
+				baseUrl:'https://mcbeeringi.github.io/sky/audio/instr/musicbox/',
+				...Object.fromEntries(['a3','ds4','a4','ds5','a5','ds6','a6','ds7'].map(x=>[n2nn(x),`${x}.mp3`]))
 			},()=>log.textContent+='loaded');
-		btn.onclick=()=>main.start('test',[69,73],main.now()+.5);
-		new Array(3).fill().map((_,i)=>[72,74,76,77,79,81,83].map(x=>x+(i-1)*12)).flat()
-		.forEach(x=>wrap.insertAdjacentHTML('beforeend',`<p class="key" onpointerdown="main.start('test',[${x}]);">${x}</p>`));
+		btn.onclick=()=>main.start('test',['c5','g5'],main.now()+.5);
+		[-1,0,1,2].map(x=>[72,74,76,77,79,81,83].map(y=>y+x*12)).flat()
+		.forEach(x=>wrap.insertAdjacentHTML('beforeend',`<p class="key" onpointerover="main.start('test',[${x}]);">${x}</p>`));
 	</script>
 </body>
 </html>
