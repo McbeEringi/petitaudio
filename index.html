@@ -10,6 +10,8 @@
 		.key{display:inline-block;margin:0;margin:1px;background-color:#8888;width:16px;height:80px;text-align:center;font-size:9px;user-select:none;-webkit-user-select:none;touch-action:none;}
 	</style>
 	<script src="petitaudio.js"></script>
+	<h1>PetitAudio</h1>
+	<img src="img/icon.svg" alt="icon">
 	<pre id="log"></pre>
 	<div id="wrap"></div>
 	<button id="btn">+.5s delay demo</button>
@@ -18,6 +20,7 @@
 			.set('test',{
 				baseUrl:'https://mcbeeringi.github.io/sky/audio/instr/musicbox/',
 				...Object.fromEntries(['a3','ds4','a4','ds5','a5','ds6','a6','ds7'].map(x=>[n2nn(x),`${x}.mp3`]))
+				//69:'https://mcbeeringi.github.io/sky/audio/instr/musicbox/a4.mp3'
 			},()=>log.textContent+='loaded');
 		btn.onclick=()=>main.start('test',['c5','g5'],main.now()+.5);
 		[-1,0,1,2].map(x=>[72,74,76,77,79,81,83].map(y=>y+x*12)).flat()

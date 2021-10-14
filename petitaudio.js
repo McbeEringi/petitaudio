@@ -5,11 +5,13 @@ class PetitAudio{
 		return this;
 	}
 	now(){return this.ctx.currentTime;}
-	set(name,notes,fx){//{note:url,...}
+	set(name,notes,fx){//{note:(url||File||Blob),...}
 		const ctx=this.ctx;
 		Promise.all(Object.entries(notes).map(async x=>{
 			if(isNaN(+x[0]))return x;
-			let y=await fetch((notes.baseUrl||'')+x[1]);
+			let y;
+			if(typeof x[1]=='string')y=await fetch((notes.baseUrl||'')+x[1]);
+			else y=new Response(x[1])
 			y=await y.arrayBuffer();
 			y=await new Promise((f,r)=>ctx.decodeAudioData(y,f,r));
 			return[+x[0],y];
