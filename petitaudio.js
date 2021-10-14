@@ -1,6 +1,6 @@
 class PetitAudio{
 	constructor(){
-		this.ctx=new(AudioContext||webkitAudioContext)();
+		this.ctx=new(window.AudioContext||window.webkitAudioContext)();
 		this.ab={};
 		return this;
 	}
