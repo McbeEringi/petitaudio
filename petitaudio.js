@@ -41,23 +41,25 @@ class PetitAudio{
 		.catch(console.warn);
 		return this;
 	}
-	async filter(finame,arg){//wip
-		let tmp=this.fi_[finame],init=!tmp||tmp.arg.type!=arg.type;
-		({
-			reverb:()=>{
-				if(init)tmp={arg,node:[this.ctx.createConvolver(),this.ctx.createGain(),this.ctx.createGain()],in:[0,1],out:[1,2]};
-				Object.assign(tmp.arg,arg);
-				tmp.node[1].buffer=await this._irgen(tmp.arg.fadeIn,tmp.arg.decay,tmp.arg.cutFreq);
-				tmp.node[1].gain.value=1-tmp.arg.wet;
-				tmp.node[2].gain.value=tmp.arg.wet;
-			},
-			gain:()=>{
-				if(init)tmp={arg,node:[this.ctx.createGain()],in:[0],out:[0]};
-				Object.assign(tmp.arg,arg);
-				tmp.node[0].gain.value=tmp.arg.gain;
-			}
-		})[arg.type]();
-		this.fi_[finame]=tmp;
+	filter(finame,arg){//wip
+		(async()=>{
+			let tmp=this.fi_[finame],init=!tmp||tmp.arg.type!=arg.type;
+			({
+				reverb:()=>{
+					if(init)tmp={arg,node:[this.ctx.createConvolver(),this.ctx.createGain(),this.ctx.createGain()],in:[0,1],out:[1,2]};
+					Object.assign(tmp.arg,arg);
+					tmp.node[1].buffer=await this._irgen(tmp.arg.fadeIn,tmp.arg.decay,tmp.arg.cutFreq);
+					tmp.node[1].gain.value=1-tmp.arg.wet;
+					tmp.node[2].gain.value=tmp.arg.wet;
+				},
+				gain:()=>{
+					if(init)tmp={arg,node:[this.ctx.createGain()],in:[0],out:[0]};
+					Object.assign(tmp.arg,arg);
+					tmp.node[0].gain.value=tmp.arg.gain;
+				}
+			})[arg.type]();
+			this.fi_[finame]=tmp;
+		})();
 		return this;
 	}
 	start(plname,arr,...t){//[note...]
