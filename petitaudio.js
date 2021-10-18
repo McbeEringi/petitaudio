@@ -6,62 +6,58 @@ class PetitAudio{
 	}
 	now(){return this.ctx.currentTime;}
 	_n2nn(x){return+({c:12,d:14,e:16,f:17,g:19,a:21,b:23})[x[0].toLowerCase()]+(({'#':1,s:1})[x[1]]?x.slice(2)*12+1:x.slice(1)*12);}
-	_irgen(pred,d,cut,rate=this.ctx.sampleRate){
+	_irgen(fi,d,cut,rate=this.ctx.sampleRate,ch=2){
 		return new Promise(f=>{
-			d+=pred;
 			const fr=d*rate,
-				oac=new(window.OfflineAudioContext||window.webkitOfflineAudioContext)(1,fr,rate),
-				ab=oac.createBuffer(1,fr,rate),
-				lpf=oac.createBiquadFilter(),
-				gain=oac.createGain(),
-				bs=oac.createBufferSource(),
-				view=ab.getChannelData(0);
-			for(let i=0;i<fr;i++)view[i]=Math.random()*2-1;
+				oac=new(window.OfflineAudioContext||window.webkitOfflineAudioContext)(ch,fr,rate),
+				ab=oac.createBuffer(ch,fr,rate),lpf=oac.createBiquadFilter(),g0=oac.createGain(),
+				g1=oac.createGain(),bs=oac.createBufferSource();
+			for(let i=0,view;i<ch;i++){view=ab.getChannelData(i);for(let j=0;j<fr;j++)view[j]=Math.random()*2-1;}
 			lpf.type='lowpass';lpf.frequency.value=cut;lpf.Q.value=0;
-			gain.gain.value=0;
-			gain.gain.linearRampToValueAtTime(1,pred).exponentialRampToValueAtTime(.01,d*.95).linearRampToValueAtTime(0,d);
-			bs.buffer=ab;
-			bs.connect(lpf);lpf.connect(gain);gain.connect(oac.destination);
-			bs.start();
-			oac.startRendering();
-			oac.oncomplete=e=>f(e.renderedBuffer);
+			g0.gain.value=1;g0.gain.exponentialRampToValueAtTime(.01,d*.9).linearRampToValueAtTime(0,d);
+			g1.gain.value=0;g1.gain.linearRampToValueAtTime(1,fi);
+			bs.buffer=ab;[bs,lpf,g0,g1,oac.destination].reduce((a,x)=>a.connect(x));bs.start();
+			oac.startRendering();oac.oncomplete=e=>f(e.renderedBuffer);
 		});
 	}
-	player(plname,obj,fx){//obj {notes:{[notename]:(url||File||Blob),...},baseUrl:'',filters:[filtername...],loop:Boolean,fade:Number}
+	player(plname,arg,fx){//arg {notes:{[notename]:(url||File||Blob),...},baseUrl:'',filters:[filtername...],loop:Boolean,fade:Number}
 		const ctx=this.ctx;
-		Promise.all(Object.entries(obj.notes||{}).map(async x=>{
+		Promise.all(argect.entries(arg.notes||{}).map(async x=>{
 			if(isNaN(+x[0]))x[0]=this._n2nn(x[0]);
 			if(isNaN(+x[0]))return;
 			let y;
-			if(typeof x[1]=='string')y=await fetch((obj.baseUrl||'')+x[1]);
+			if(typeof x[1]=='string')y=await fetch((arg.baseUrl||'')+x[1]);
 			else y=new Response(x[1])
 			y=await y.arrayBuffer();
 			y=await new Promise((f,r)=>ctx.decodeAudioData(y,f,r));
 			return{nn:+x[0],buf:y};//,dat:x[1]
 		}))
 		.then(x=>{
-			if(obj.notes)obj.notes=x;
-			x={...(this.pl_[plname]||{}),...obj};
+			if(arg.notes)arg.notes=x;
+			x={...(this.pl_[plname]||{}),...arg};
 			this.pl_[plname]=x;
 			if(fx)fx(x);
 		})
 		.catch(console.warn);
 		return this;
 	}
-	filter(finame,obj){//wip
+	async filter(finame,arg){//wip
+		let tmp=this.fi_[finame],init=!tmp||tmp.arg.type!=arg.type;
 		({
 			reverb:()=>{
-				let tmp=this.fi_[finame];
-				if(tmp.type!=obj.type)tmp={type:obj.type,node:this.ctx.createConvolver()};
-
+				if(init)tmp={arg,node:[this.ctx.createConvolver(),this.ctx.createGain(),this.ctx.createGain()],in:[0,1],out:[1,2]};
+				Object.assign(tmp.arg,arg);
+				tmp.node[1].buffer=await this._irgen(tmp.arg.fadeIn,tmp.arg.decay,tmp.arg.cutFreq);
+				tmp.node[1].gain.value=1-tmp.arg.wet;
+				tmp.node[2].gain.value=tmp.arg.wet;
 			},
 			gain:()=>{
-				let tmp=this.fi_[finame];
-				if(tmp.type!=obj.type)tmp={type:obj.type,node:this.ctx.createGain()};
-				tmp.node.gain.value=obj.gain;
-				this.fi_[finame]=tmp;
+				if(init)tmp={arg,node:[this.ctx.createGain()],in:[0],out:[0]};
+				Object.assign(tmp.arg,arg);
+				tmp.node[0].gain.value=tmp.arg.gain;
 			}
-		})[obj.type]();
+		})[arg.type]();
+		this.fi_[finame]=tmp;
 		return this;
 	}
 	start(plname,arr,...t){//[note...]
