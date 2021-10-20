@@ -22,7 +22,7 @@ class PetitAudio{
 	}
 	player(plname,arg,fx){//arg:{notes:{[notename]:(url||File||Blob),...},baseUrl:'',filters:[filtername...],loop:Boolean,fade:Number}
 		const ctx=this.ctx;
-		Promise.all(argect.entries(arg.notes||{}).map(async x=>{
+		Promise.all(Object.entries(arg.notes||{}).map(async x=>{
 			if(isNaN(+x[0]))x[0]=this._n2nn(x[0]);
 			if(isNaN(+x[0]))return;
 			let y;
@@ -42,27 +42,27 @@ class PetitAudio{
 		return this;
 	}
 	filter(finame,arg){
-		(async()=>{
-			let tmp=this.fi_[finame],init=!tmp||tmp.arg.type!=arg.type;
-			({
-				reverb:()=>{//arg:{type:'reverb',fadeIn:Sec,decay:Sec,cutFreq:Hz,wet:NormalRange}
-					if(init){
-						tmp={arg,node:[this.ctx.createConvolver(),this.ctx.createGain(),this.ctx.createGain()],in:[0,1],out:[1,2]};
-						tmp.node[0].connect(tmp.node[2]);
-					}
-					Object.assign(tmp.arg,arg);
-					tmp.node[0].buffer=await this._irgen(tmp.arg.fadeIn,tmp.arg.decay,tmp.arg.cutFreq);
-					tmp.node[1].gain.value=1-tmp.arg.wet;
-					tmp.node[2].gain.value=tmp.arg.wet;
-				},
-				gain:()=>{//arg:{type:'gain',gain:NormalRange}
-					if(init)tmp={arg,node:[this.ctx.createGain()],in:[0],out:[0]};
-					Object.assign(tmp.arg,arg);
-					tmp.node[0].gain.value=tmp.arg.gain;
+		if(this.fi_[finame])arg={...(this.fi_[finame].arg||{}),...arg};
+		let tmp=this.fi_[finame],init=!tmp||tmp.arg.type!=arg.type;
+		({
+			reverb:async()=>{//arg:{type:'reverb',fadeIn:Sec,decay:Sec,cutFreq:Hz,wet:NormalRange}
+				if(init){
+					tmp={arg,node:[this.ctx.createConvolver(),this.ctx.createGain(),this.ctx.createGain()],in:[0,1],out:[1,2]};
+					tmp.node[0].connect(tmp.node[2]);
 				}
-			})[arg.type]();
-			this.fi_[finame]=tmp;
-		})();
+				Object.assign(tmp.arg,arg);
+				tmp.node[0].buffer=await this._irgen(tmp.arg.fadeIn,tmp.arg.decay,tmp.arg.cutFreq);
+				tmp.node[1].gain.value=1-tmp.arg.wet;
+				tmp.node[2].gain.value=tmp.arg.wet;
+				this.fi_[finame]=tmp;
+			},
+			gain:()=>{//arg:{type:'gain',gain:NormalRange}
+				if(init)tmp={arg,node:[this.ctx.createGain()],in:[0],out:[0]};
+				Object.assign(tmp.arg,arg);
+				tmp.node[0].gain.value=tmp.arg.gain;
+				this.fi_[finame]=tmp;
+			}
+		})[arg.type]();
 		return this;
 	}
 	start(plname,arr,...t){//[note...]
