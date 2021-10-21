@@ -41,8 +41,8 @@ class PetitAudio{
 		.catch(console.warn);
 		return this;
 	}
-	filter(finame,arg){console.log(this.fi_[finame]);
-		if(this.fi_[finame]){arg={...this.fi_[finame].arg,...arg};console.log(arg)}
+	filter(finame,arg){
+		if(this.fi_[finame])arg={...this.fi_[finame].arg,...arg};
 		let tmp=this.fi_[finame],init=!tmp||tmp.arg.type!=arg.type;
 		({
 			reverb:async()=>{//arg:{type:'reverb',fadeIn:Sec,decay:Sec,cutFreq:Hz,wet:NormalRange}
@@ -62,6 +62,7 @@ class PetitAudio{
 			},
 			biquad:()=>{},
 			pan:()=>{},
+			delay:()=>{}
 		})[arg.type]();
 		return this;
 	}
