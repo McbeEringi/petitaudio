@@ -14,8 +14,8 @@ class PetitAudio{
 				g1=oac.createGain(),bs=oac.createBufferSource();
 			for(let i=0,view;i<ch;i++){view=ab.getChannelData(i);for(let j=0;j<fr;j++)view[j]=Math.random()*2-1;}
 			lpf.type='lowpass';lpf.frequency.value=cut;lpf.Q.value=0;
-			g0.gain.value=1;g0.gain.exponentialRampToValueAtTime(.01,d*.9).linearRampToValueAtTime(0,d);
-			g1.gain.value=0;g1.gain.linearRampToValueAtTime(1,fi);
+			g0.gain.setTargetAtTime(0,0,d*.2);
+			g1.gain.setValueCurveAtTime(new Float32Array([0,1]),0,fi).setValueCurveAtTime(new Float32Array([1,0]),d*.9,d*.1);
 			bs.buffer=ab;[bs,lpf,g0,g1,oac.destination].reduce((a,x)=>a.connect(x));bs.start();
 			oac.startRendering();oac.oncomplete=e=>f(e.renderedBuffer);
 		});
@@ -44,39 +44,62 @@ class PetitAudio{
 	filter(finame,arg){
 		if(this.fi_[finame])arg={...this.fi_[finame].arg,...arg};
 		let tmp=this.fi_[finame],init=!tmp||tmp.arg.type!=arg.type;
-		({
-			reverb:async()=>{//arg:{type:'reverb',fadeIn:Sec,decay:Sec,cutFreq:Hz,wet:NormalRange}
-				if(init){
-					tmp={arg,node:[this.ctx.createConvolver(),this.ctx.createGain(),this.ctx.createGain()],in:[0,1],out:[1,2]};
-					tmp.node[0].connect(tmp.node[2]);
-				}
-				Object.assign(tmp.arg,arg);this.fi_[finame]=tmp;
-				tmp.node[0].buffer=await this._irgen(tmp.arg.fadeIn,tmp.arg.decay,tmp.arg.cutFreq);
-				tmp.node[1].gain.value=1-tmp.arg.wet;
-				tmp.node[2].gain.value=tmp.arg.wet;
+		const margeset=()=>{Object.assign(tmp.arg,arg);this.fi_[finame]=tmp;},
+			wetinit=(a,x)=>{
+				x={arg:a,node:[x,this.ctx.createGain(),this.ctx.createGain()],in:[0,1],out:[1,2]};
+				x.node[0].connect(x.node[2]);
+				return x;
 			},
-			gain:()=>{//arg:{type:'gain',gain:NormalRange}
+			margesetwet=()=>{
+				margeset();
+				tmp.node[1].gain.value=1-(tmp.node[2].gain.value=arg.wet||1);
+			};
+		[
+			()=>{//gain arg:{type:'gain',gain:Num}
 				if(init)tmp={arg,node:[this.ctx.createGain()],in:[0],out:[0]};
-				Object.assign(tmp.arg,arg);this.fi_[finame]=tmp;
-				tmp.node[0].gain.value=tmp.arg.gain;
+				margeset();
+				tmp.node[0].gain.value=arg.gain;
 			},
-			biquad:()=>{},
-			pan:()=>{},
-			delay:()=>{}
-		})[arg.type]();
+			async()=>{//reverb arg:{type:'reverb',fadeIn:Sec,decay:Sec,freq:Hz,wet:Num}
+				if(init)tmp=wetinit(arg,this.ctx.createConvolver());
+				margesetwet();
+				tmp.node[0].buffer=await this._irgen(arg.fadeIn,arg.decay,arg.freq);
+			},
+			()=>{//biquad arg:{type,freq:Hz,q:Num,gain:dB,wet:Num}
+				if(init)tmp=wetinit(arg,this.ctx.createBiquadFilter());
+				margesetwet();
+				tmp.node[0].type=arg.type;tmp.node[0].frequency.value=arg.freq;
+				tmp.node[0].Q.value=arg.q;tmp.node[0].gain.value=arg.gain;
+			},
+			()=>{//delay arg:{delay:Sec,maxDelay:Sec,first:Bool,repeat:Num,wet:Num}
+				arg.repeat=arg.repeat||0;
+				if(init){
+					tmp={arg,node:[this.ctx.createDelay(arg.maxDelay),this.ctx.createGain(),this.ctx.createGain(),this.ctx.createGain()],in:[0,1],out:[1,2]};
+					tmp.node[0].connect(tmp.node[2]);tmp.node[0].connect(tmp.node[3]).connect(tmp.node[0]);
+				}else if(tmp.arg.maxDelay!=arg.maxDelay)tmp.node[0]=this.ctx.createDelay(arg.maxDelay);
+				margesetwet();
+				if(arg.first){tmp.node[1].gain.value=1;tmp.node[2].gain.value*=arg.repeat;}
+				tmp.node[0].delayTime.value=arg.delay;
+				tmp.node[3].gain.value=arg.repeat;
+			}
+		][{
+			gain:0,reverb:1,
+			lowpass:2,highpass:2,bandpass:2,lowshelf:2,highshelf:2,peaking:2,notch:2,allpass:2,
+			delay:3
+		}[arg.type]]();
 		return this;
 	}
 	start(plname,arr,...t){//[note...]
 		for(let x of arr){
 			if(isNaN(+x))x=this._n2nn(x);
-			const absn=this.ctx.createBufferSource(),
+			const abs=this.ctx.createBufferSource(),
 				s=this.pl_[plname].notes.reduce((a,y)=>Math.abs(y.nn-x)<=Math.abs(a.nn-x)?y:a);
-			absn.buffer=s.buf;
-			absn.playbackRate.value=Math.pow(2,(x-s.nn)/12);
-			[{node:[absn],out:[0]},...this.pl_[plname].filters.map(y=>this.fi_[y]),{node:[this.ctx.destination],in:[0]}].reduce((a,y)=>{
+			abs.buffer=s.buf;
+			abs.playbackRate.value=Math.pow(2,(x-s.nn)/12);
+			[{node:[abs],out:[0]},...this.pl_[plname].filters.map(y=>this.fi_[y]),{node:[this.ctx.destination],in:[0]}].reduce((a,y)=>{
 				a.out.forEach(i=>y.in.forEach(j=>a.node[i].connect(y.node[j])));return y;
 			});
-			absn.start(...t);
+			abs.start(...t);
 		}
 		return this;
 	}

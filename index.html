@@ -30,10 +30,11 @@
 					a6:'a6.mp3',
 					ds7:'ds7.mp3'
 				},
-				filters:['rev']
+				filters:['rev','del']
 				//69:'https://mcbeeringi.github.io/sky/audio/instr/musicbox/a4.mp3'
 			},()=>log.textContent+='loaded')
-			.filter('rev',{type:'reverb',fadeIn:.1,decay:3,cutFreq:10000,wet:1}).filter('gain',{type:'gain',gain:.5});
+			.filter('rev',{type:'reverb',fadeIn:.1,decay:3,freq:10000,wet:.5})
+			.filter('del',{type:'delay',delay:.5,first:true,repeat:.7});
 		btn.onclick=()=>[['c5'],['d5'],['e5'],['g5'],['c6']].map((x,i)=>main.start('test',x,main.now()+i*.05));
 		[-1,0,1,2].map(x=>[72,74,76,77,79,81,83].map(y=>y+x*12)).flat()
 		.forEach(x=>wrap.insertAdjacentHTML('beforeend',`<p class="key" onpointerover="main.start('test',[${x}]);">${x}</p>`));
