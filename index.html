@@ -11,33 +11,41 @@
 		.key{display:inline-block;margin:0;margin:1px;background-color:#8888;width:16px;height:80px;text-align:center;font-size:9px;user-select:none;-webkit-user-select:none;touch-action:none;}
 	</style>
 	<script src="petitaudio.js"></script>
-	<h1>PetitAudio</h1>
-	<img src="img/icon.svg" alt="icon">
-	<pre id="log"></pre>
-	<div id="wrap"></div>
-	<button id="btn">btn</button>
+	<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+	<script src="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release/build/highlight.min.js"></script>
+	<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release/build/styles/atom-one-dark.min.css" media="print" onload="this.media='all';">
+	<div>
+		<h2>sample</h2>
+		<pre id="log"></pre>
+		<div id="wrap"></div>
+		<button id="btn">btn</button>
+	</div>
+	<script id="src">
+const main=new PetitAudio()
+	.player('test',{
+		baseUrl:'https://mcbeeringi.github.io/sky/audio/instr/musicbox/',
+		notes:{
+			a3:'a3.mp3',
+			ds4:'ds4.mp3',
+			a4:'a4.mp3',
+			ds5:'ds5.mp3',
+			a5:'a5.mp3',
+			ds6:'ds6.mp3',
+			a6:'a6.mp3',
+			ds7:'ds7.mp3'
+		},
+		filters:['rev','del']
+	},()=>log.textContent+='loaded')
+	.filter('rev',{type:'reverb',fadeIn:.1,decay:3,freq:10000,wet:.5})
+	.filter('del',{type:'pingpong',delay:.3,repeat:.8});
+btn.onclick=()=>[['c5'],['d5'],['e5'],['g5'],['c6']].map((x,i)=>main.start('test',x,main.now()+i*.05));
+[-1,0,1,2].map(x=>[72,74,76,77,79,81,83].map(y=>y+x*12)).flat()
+.forEach(x=>wrap.insertAdjacentHTML('beforeend',`<p class="key" onpointerover="main.start('test',[${x}]);">${x}</p>`));
+	</script>
 	<script>
-		const main=new PetitAudio()
-			.player('test',{
-				baseUrl:'https://mcbeeringi.github.io/sky/audio/instr/musicbox/',
-				notes:{
-					a3:'a3.mp3',
-					ds4:'ds4.mp3',
-					a4:'a4.mp3',
-					ds5:'ds5.mp3',
-					a5:'a5.mp3',
-					ds6:'ds6.mp3',
-					a6:'a6.mp3',
-					ds7:'ds7.mp3'
-				},
-				filters:['rev','del']
-				//69:'https://mcbeeringi.github.io/sky/audio/instr/musicbox/a4.mp3'
-			},()=>log.textContent+='loaded')
-			.filter('rev',{type:'reverb',fadeIn:.1,decay:3,freq:10000,wet:.5})
-			.filter('del',{type:'delay',delay:.5,first:true,repeat:.7});
-		btn.onclick=()=>[['c5'],['d5'],['e5'],['g5'],['c6']].map((x,i)=>main.start('test',x,main.now()+i*.05));
-		[-1,0,1,2].map(x=>[72,74,76,77,79,81,83].map(y=>y+x*12)).flat()
-		.forEach(x=>wrap.insertAdjacentHTML('beforeend',`<p class="key" onpointerover="main.start('test',[${x}]);">${x}</p>`));
+		marked.setOptions({highlight:(c,l)=>hljs.highlightAuto(c,[l]).value});
+		fetch('README.md').then(x=>x.text()).then(x=>document.body.insertAdjacentHTML('afterbegin',marked(x)));
+		document.body.insertAdjacentHTML('beforeend',`<pre id="demosrc"><code>${hljs.highlight(src.textContent,{language:'js'}).value}</code></pre>`);
 	</script>
 </body>
 </html>

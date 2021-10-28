@@ -52,7 +52,7 @@ class PetitAudio{
 			},
 			margesetwet=()=>{
 				margeset();
-				tmp.node[1].gain.value=1-(tmp.node[2].gain.value=arg.wet||1);
+				tmp.node[1].gain.value=1-(tmp.node[2].gain.value=arg.wet==undefined?1:arg.wet);
 			};
 		[
 			()=>{//gain arg:{type:'gain',gain:Num}
@@ -71,21 +71,28 @@ class PetitAudio{
 				tmp.node[0].type=arg.type;tmp.node[0].frequency.value=arg.freq;
 				tmp.node[0].Q.value=arg.q;tmp.node[0].gain.value=arg.gain;
 			},
-			()=>{//delay arg:{delay:Sec,maxDelay:Sec,first:Bool,repeat:Num,wet:Num}
-				arg.repeat=arg.repeat||0;
-				if(init){
-					tmp={arg,node:[this.ctx.createDelay(arg.maxDelay),this.ctx.createGain(),this.ctx.createGain(),this.ctx.createGain()],in:[0,1],out:[1,2]};
-					tmp.node[0].connect(tmp.node[2]);tmp.node[0].connect(tmp.node[3]).connect(tmp.node[0]);
-				}else if(tmp.arg.maxDelay!=arg.maxDelay)tmp.node[0]=this.ctx.createDelay(arg.maxDelay);
+			()=>{//delay arg:{delay:Sec,maxDelay:Sec,wet:Num}
+				if(init||tmp.arg.maxDelay!=arg.maxDelay)tmp=wetinit(arg,this.ctx.createDelay());
 				margesetwet();
-				if(arg.first){tmp.node[1].gain.value=1;tmp.node[2].gain.value*=arg.repeat;}
 				tmp.node[0].delayTime.value=arg.delay;
-				tmp.node[3].gain.value=arg.repeat;
+			},
+			()=>{//pingpong arg:{delay:Sec,maxDelay:Sec,repeat:Num,wet:Num,channel:Num}
+				arg.repeat=arg.repeat||0;arg.channel=arg.channel||2;
+				if(init||tmp.arg.channel!=arg.channel||tmp.arg.maxDelay!=arg.maxDelay){
+					tmp={arg,node:[this.ctx.createGain(),this.ctx.createGain(),this.ctx.createChannelSplitter(arg.channel),this.ctx.createChannelMerger(arg.channel),this.ctx.createDelay(arg.maxDelay),this.ctx.createGain()],in:[0,1],out:[0,5]};
+					tmp.node[1].connect(tmp.node[2]);
+					for(let i=0;i<arg.channel;i++)tmp.node[2].connect(tmp.node[3],i,(i+1)%arg.channel);
+					tmp.node[3].connect(tmp.node[4]).connect(tmp.node[5]);tmp.node[4].connect(tmp.node[1]);
+				}
+				margeset();
+				tmp.node[1].gain.value=arg.repeat;
+				tmp.node[4].delayTime.value=arg.delay;
+				tmp.node[5].gain.value=arg.wet==undefined?1:arg.wet;
 			}
 		][{
 			gain:0,reverb:1,
 			lowpass:2,highpass:2,bandpass:2,lowshelf:2,highshelf:2,peaking:2,notch:2,allpass:2,
-			delay:3
+			delay:3,pingpong:4,
 		}[arg.type]]();
 		return this;
 	}
