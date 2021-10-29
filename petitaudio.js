@@ -100,7 +100,7 @@ class PetitAudio{
 		for(let x of arr){
 			if(isNaN(+x))x=this._n2nn(x);
 			const abs=this.ctx.createBufferSource(),
-				s=this.pl_[plname].notes.reduce((a,y)=>{const d=Math.abs(y.nn-x);return a[0]=>d?[d,y]:a;},[Infinity])[1];
+				s=this.pl_[plname].notes.reduce((a,y)=>{const d=Math.abs(y.nn-x);return a[0]<d?a:[d,y];},[Infinity])[1];
 			abs.buffer=s.buf;
 			abs.playbackRate.value=Math.pow(2,(x-s.nn)/12);
 			[{node:[abs],out:[0]},...this.pl_[plname].filters.map(y=>this.fi_[y]),{node:[this.ctx.destination],in:[0]}].reduce((a,y)=>{
