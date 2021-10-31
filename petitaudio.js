@@ -42,9 +42,10 @@ class PetitAudio{
 		return this;
 	}
 	filter(finame,arg){
-		if(this.fi_[finame])arg={...this.fi_[finame].arg,...arg};
+		arg={...(this.fi_[finame]?this.fi_[finame].arg:{wet:1,dur:0}),...arg};
 		let tmp=this.fi_[finame],init=!tmp||tmp.arg.type!=arg.type;
 		const margeset=()=>{Object.assign(tmp.arg,arg);this.fi_[finame]=tmp;},
+			apli=(ap,trg)=>ap.value=trg,//ap.setValueCurveAtTime([ap.value,trg],0,arg.dur),
 			wetinit=(a,x)=>{
 				x={arg:a,node:[x,this.ctx.createGain(),this.ctx.createGain()],in:[0,1],out:[1,2]};
 				x.node[0].connect(x.node[2]);
@@ -52,13 +53,14 @@ class PetitAudio{
 			},
 			margesetwet=()=>{
 				margeset();
-				tmp.node[1].gain.value=1-(tmp.node[2].gain.value=arg.wet==undefined?1:arg.wet);
+				apli(tmp.node[1].gain,1-arg.wet);
+				apli(tmp.node[2].gain,arg.wet);
 			};
 		[
-			()=>{//gain arg:{type:'gain',gain:Num}
+			()=>{//gain arg:{type:'gain',gain:Num,dur:Sec}
 				if(init)tmp={arg,node:[this.ctx.createGain()],in:[0],out:[0]};
 				margeset();
-				tmp.node[0].gain.value=arg.gain;
+				apli(tmp.node[0].gain,arg.gain);
 			},
 			async()=>{//reverb arg:{type:'reverb',fadeIn:Sec,decay:Sec,freq:Hz,wet:NRng}
 				if(init)tmp=wetinit(arg,this.ctx.createConvolver());
@@ -68,13 +70,15 @@ class PetitAudio{
 			()=>{//biquad arg:{type,freq:Hz,q:Num,gain:dB,wet:NRng}
 				if(init)tmp=wetinit(arg,this.ctx.createBiquadFilter());
 				margesetwet();
-				tmp.node[0].type=arg.type;tmp.node[0].frequency.value=arg.freq;
-				tmp.node[0].Q.value=arg.q;tmp.node[0].gain.value=arg.gain;
+				tmp.node[0].type=arg.type;
+				apli(tmp.node[0].frequency,arg.freq);
+				apli(tmp.node[0].Q,arg.q);
+				apli(tmp.node[0].gain,arg.gain);
 			},
 			()=>{//delay arg:{type:'delay',delay:Sec,maxDelay:Sec,wet:NRng}
 				if(init||tmp.arg.maxDelay!=arg.maxDelay)tmp=wetinit(arg,this.ctx.createDelay(arg.maxDelay));
 				margesetwet();
-				tmp.node[0].delayTime.value=arg.delay;
+				apli(tmp.node[0].delayTime,arg.delay);
 			},
 			()=>{//pingpong arg:{type:'pingpong',delay:Sec,maxDelay:Sec,repeat:Num,wet:NRng,channel:Num}
 				arg.repeat=arg.repeat||0;arg.channel=arg.channel||2;
@@ -85,25 +89,26 @@ class PetitAudio{
 					tmp.node[3].connect(tmp.node[4]).connect(tmp.node[5]);tmp.node[4].connect(tmp.node[1]);
 				}
 				margeset();
-				tmp.node[1].gain.value=arg.repeat;
-				tmp.node[4].delayTime.value=arg.delay;
-				tmp.node[5].gain.value=arg.wet==undefined?1:arg.wet;
+				apli(tmp.node[1].gain,arg.repeat);
+				apli(tmp.node[4].delayTime,arg.delay);
+				apli(tmp.node[5].gain,arg.wet);
 			},
 			()=>{//pan2d arg:{type:'pan2d',pan:-1~1,wet:NRng}
+				arg.pan=arg.pan||0;
 				if(init)tmp=wetinit(arg,this.ctx.createStereoPanner());
 				margesetwet();
-				tmp.node[0].pan.value=arg.pan||0;
+				apli(tmp.node[0].pan,arg.pan);
 			},
 			()=>{//pan3d arg:{type:'pan3d',pos:[x,y,z],to:[dx,dy,dz],dir:NormalRange,wet:NRng}
 				arg.dir=Math.max(0,Math.min(1,arg.dir||0));
 				if(init)tmp=wetinit(arg,this.ctx.createPanner());
 				margesetwet();
-				tmp.node[0].cornInnerAngle.value=(1-arg.dir)*360;
-				tmp.node[0].cornOuterAngle.value=(2-arg.dir)*180;
-				tmp.node[0].cornOuterGain.value=arg.dir;
+				tmp.node[0].cornInnerAngle=(1-arg.dir)*360;
+				tmp.node[0].cornOuterAngle=(2-arg.dir)*180;
+				tmp.node[0].cornOuterGain=arg.dir;
 				['X','Y','Z'].forEach((x,i)=>{
-					if(!isNaN(+arg.pos[i]))tmp.node[0][`position${x}`].value=arg.pos[i];
-					if(!isNaN(+arg.to[i]))tmp.node[0][`orientation${x}`].value=arg.to[i];
+					if(!isNaN(+arg.pos[i]))apli(tmp.node[0][`position${x}`],arg.pos[i]);
+					if(!isNaN(+arg.to[i]))apli(tmp.node[0][`orientation${x}`],arg.to[i]);
 				});
 			}
 		][{
