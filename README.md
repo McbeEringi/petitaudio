@@ -18,3 +18,5 @@ A *petit* JS libraries that helps to create interactive audio app
 	- allpass(biquad)
 	- delay
 	- pingpong
+	- pan2d
+	- pan3d
