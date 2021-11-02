@@ -42,7 +42,7 @@ class PetitAudio{
 		return this;
 	}
 	filter(finame,arg){
-		arg={...(this.fi_[finame]?this.fi_[finame].arg:{wet:1,dur:.01}),...arg};
+		arg={...(this.fi_[finame]?this.fi_[finame].arg:{wet:1,dur:.001}),...arg};
 		let tmp=this.fi_[finame],init=!tmp||tmp.arg.type!=arg.type;
 		const margeset=()=>{Object.assign(tmp.arg,arg);this.fi_[finame]=tmp;},
 			apli=(ap,trg)=>{ap.cancelScheduledValues(0);ap.setValueCurveAtTime([ap.value,trg],0,arg.dur);},
