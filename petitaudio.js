@@ -46,7 +46,7 @@ class PetitAudio{
 		arg={...(this.fi_[finame]?this.fi_[finame].arg:{wet:1,dur:.001}),...arg};
 		let tmp=this.fi_[finame],init=!tmp||tmp.arg.type!=arg.type;
 		const margeset=()=>{Object.assign(tmp.arg,arg);this.fi_[finame]=tmp;},
-			apli=(ap,trg)=>{ap.cancelScheduledValues(0);ap.setValueCurveAtTime(new Float32Array([ap.value,trg]),0,arg.dur);},
+			apli=(ap,trg)=>{ap.cancelScheduledValues(0);ap.setValueCurveAtTime(new Float32Array([ap.value,trg]),this.ctx.currentTime,arg.dur);},
 			wetinit=(a,x)=>{
 				x={arg:a,node:[x,this.ctx.createGain(),this.ctx.createGain()],in:[0,1],out:[1,2]};
 				x.node[0].connect(x.node[2]);
@@ -127,8 +127,8 @@ class PetitAudio{
 				g=this.ctx.createGain(),f=this.pl_[plname].fade;
 			abs.buffer=s.buf;abs.loop=this.pl_[plname].loop;
 			abs.playbackRate.value=Math.pow(2,(x-s.nn)/12);
-			if(f>0)g.gain.setValueCurveAtTime(new Float32Array([0,1]),0,f);
-			[{node:[abs],out:[0]},...this.pl_[plname].filters.map(y=>this.fi_[y]),{node:[g],in:[0],out:[0]},{node:[this.ctx.destination],in:[0]}].reduce((a,y)=>{
+			if(f>0)g.gain.setValueCurveAtTime(new Float32Array([0,1]),this.ctx.currentTime,f);
+			[{node:[abs],out:[0]},{node:[g],in:[0],out:[0]},...this.pl_[plname].filters.map(y=>this.fi_[y]),{node:[this.ctx.destination],in:[0]}].reduce((a,y)=>{
 				a.out.forEach(i=>y.in.forEach(j=>a.node[i].connect(y.node[j])));return y;
 			});
 			abs.start(...t);
@@ -146,7 +146,7 @@ class PetitAudio{
 			if(!this.abs_[plname][x])continue;
 			this.abs_[plname][x].forEach(y=>{
 				y[1].gain.cancelScheduledValues(0);
-				if(f>0)y[1].gain.setValueCurveAtTime(new Float32Array([y[1].gain.value,0]),0,f);
+				if(f>0)y[1].gain.setValueCurveAtTime(new Float32Array([y[1].gain.value,0]),this.ctx.currentTime,f);
 				y[0].stop(t+this.pl_[plname].fade);
 			});
 			delete this.abs_[plname][x];
