@@ -123,24 +123,32 @@ class PetitAudio{
 		for(let x of arr){
 			if(isNaN(+x))x=this._n2nn(x);
 			const abs=this.ctx.createBufferSource(),
-				s=this.pl_[plname].notes.reduce((a,y)=>{const d=Math.abs(y.nn-x);return a[0]<d?a:[d,y];},[Infinity])[1];
+				s=this.pl_[plname].notes.reduce((a,y)=>{const d=Math.abs(y.nn-x);return a[0]<d?a:[d,y];},[Infinity])[1],
+				g=this.ctx.createGain(),f=this.pl_[plname].fade;
 			abs.buffer=s.buf;abs.loop=this.pl_[plname].loop;
 			abs.playbackRate.value=Math.pow(2,(x-s.nn)/12);
-			[{node:[abs],out:[0]},...this.pl_[plname].filters.map(y=>this.fi_[y]),{node:[this.ctx.destination],in:[0]}].reduce((a,y)=>{
+			if(f>0)g.gain.setValueCurveAtTime(new Float32Array([0,1]),0,f);
+			[{node:[abs],out:[0]},...this.pl_[plname].filters.map(y=>this.fi_[y]),{node:[g],in:[0],out:[0]},{node:[this.ctx.destination],in:[0]}].reduce((a,y)=>{
 				a.out.forEach(i=>y.in.forEach(j=>a.node[i].connect(y.node[j])));return y;
 			});
 			abs.start(...t);
 			if(!this.abs_[plname][x])this.abs_[plname][x]=new Set();
-			this.abs_[plname][x].add(abs);
-			abs.onended=()=>this.abs_[plname][x].delete(abs);
+			const y=[abs,g];
+			this.abs_[plname][x].add(y);
+			abs.onended=()=>{if(this.abs_[plname][x])this.abs_[plname][x].delete(y);};
 		}
 		return this;
 	}
-	stop(plname,arr=Object.keys(this.abs_[plname]),t){//[note...]
+	stop(plname,arr=Object.keys(this.abs_[plname]),t=0){//[note...]
+		const f=this.pl_[plname].fade;
 		for(let x of arr){
-			let a=this.abs_[plname][x];
-			if(!a)continue;
-			a.forEach(abs=>{abs.onended=0;abs.stop(t);});
+			if(isNaN(+x))x=this._n2nn(x);
+			if(!this.abs_[plname][x])continue;
+			this.abs_[plname][x].forEach(y=>{
+				y[1].gain.cancelScheduledValues(0);
+				if(f>0)y[1].gain.setValueCurveAtTime(new Float32Array([y[1].gain.value,0]),0,f);
+				y[0].stop(t+this.pl_[plname].fade);
+			});
 			delete this.abs_[plname][x];
 		}
 	}
