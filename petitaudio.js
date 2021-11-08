@@ -1,7 +1,7 @@
 class PetitAudio{
 	constructor(){
 		this.ctx=new(window.AudioContext||window.webkitAudioContext)();
-		this.pl_={};this.fi_={};
+		this.pl_={};this.fi_={};this.abs_={};
 		return this;
 	}
 	now(){return this.ctx.currentTime;}
@@ -36,6 +36,7 @@ class PetitAudio{
 			if(arg.notes)arg.notes=x;
 			x={...(this.pl_[plname]||{filters:[],loop:false,fade:0}),...arg};
 			this.pl_[plname]=x;
+			if(!this.abs_[plname])this.abs_[plname]={};
 			if(fx)fx(x);
 		})
 		.catch(console.warn);
@@ -123,13 +124,24 @@ class PetitAudio{
 			if(isNaN(+x))x=this._n2nn(x);
 			const abs=this.ctx.createBufferSource(),
 				s=this.pl_[plname].notes.reduce((a,y)=>{const d=Math.abs(y.nn-x);return a[0]<d?a:[d,y];},[Infinity])[1];
-			abs.buffer=s.buf;
+			abs.buffer=s.buf;abs.loop=this.pl_[plname].loop;
 			abs.playbackRate.value=Math.pow(2,(x-s.nn)/12);
 			[{node:[abs],out:[0]},...this.pl_[plname].filters.map(y=>this.fi_[y]),{node:[this.ctx.destination],in:[0]}].reduce((a,y)=>{
 				a.out.forEach(i=>y.in.forEach(j=>a.node[i].connect(y.node[j])));return y;
 			});
 			abs.start(...t);
+			if(!this.abs_[plname][x])this.abs_[plname][x]=new Set();
+			this.abs_[plname][x].add(abs);
+			abs.onended=()=>this.abs_[plname][x].delete(abs);
 		}
 		return this;
+	}
+	stop(plname,arr=Object.keys(this.abs_[plname]),t){//[note...]
+		for(let x of arr){
+			let a=this.abs_[plname][x];
+			if(!a)continue;
+			a.forEach(abs=>{abs.onended=0;abs.stop(t);});
+			delete this.abs_[plname][x];
+		}
 	}
 }
