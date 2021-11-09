@@ -151,5 +151,6 @@ class PetitAudio{
 			});
 			delete this.abs_[plname][x];
 		}
+		return this;
 	}
 }
