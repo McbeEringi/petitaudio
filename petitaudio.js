@@ -139,7 +139,7 @@ class PetitAudio{
 		}
 		return this;
 	}
-	stop(plname,arr=Object.keys(this.abs_[plname]),t=0){//[note...]
+	stop(plname,arr=Object.keys(this.abs_[plname]),t=this.ctx.currentTime){//[note...]
 		const f=this.pl_[plname].fade;
 		for(let x of arr){
 			if(isNaN(+x))x=this._n2nn(x);
