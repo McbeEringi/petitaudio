@@ -119,7 +119,7 @@ class PetitAudio{
 		}[arg.type]]();
 		return this;
 	}
-	start(plname,arr,...t){//[note...]
+	start(plname,arr,t=this.ctx.currentTime,o,d){//[note...]
 		for(let x of arr){
 			if(isNaN(+x))x=this._n2nn(x);
 			const abs=this.ctx.createBufferSource(),
@@ -127,11 +127,11 @@ class PetitAudio{
 				g=this.ctx.createGain(),f=this.pl_[plname].fade;
 			abs.buffer=s.buf;abs.loop=this.pl_[plname].loop;
 			abs.playbackRate.value=Math.pow(2,(x-s.nn)/12);
-			if(f>0)g.gain.setValueAtTime(0,this.ctx.currentTime).linearRampToValueAtTime(1,this.ctx.currentTime+f);
+			if(f>0)g.gain.setValueAtTime(0,t).linearRampToValueAtTime(1,t+f);
 			[{node:[abs],out:[0]},{node:[g],in:[0],out:[0]},...this.pl_[plname].filters.map(y=>this.fi_[y]),{node:[this.ctx.destination],in:[0]}].reduce((a,y)=>{
 				a.out.forEach(i=>y.in.forEach(j=>a.node[i].connect(y.node[j])));return y;
 			});
-			abs.start(...t);
+			abs.start(t,o,d);
 			if(!this.abs_[plname][x])this.abs_[plname][x]=new Set();
 			const y=[abs,g];
 			this.abs_[plname][x].add(y);
@@ -145,7 +145,7 @@ class PetitAudio{
 			if(isNaN(+x))x=this._n2nn(x);
 			if(!this.abs_[plname][x])continue;
 			this.abs_[plname][x].forEach(y=>{
-				//y[1].gain.cancelScheduledValues(0);
+				y[1].gain.cancelScheduledValues(t);
 				if(f>0)y[1].gain.setValueAtTime(y[1].gain.value,t).linearRampToValueAtTime(0,t+f);
 				y[0].stop(t+this.pl_[plname].fade);
 			});
