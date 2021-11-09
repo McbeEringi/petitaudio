@@ -145,8 +145,8 @@ class PetitAudio{
 			if(isNaN(+x))x=this._n2nn(x);
 			if(!this.abs_[plname][x])continue;
 			this.abs_[plname][x].forEach(y=>{
-				y[1].gain.cancelScheduledValues(0);
-				if(f>0)y[1].gain.linearRampToValueAtTime(0,this.ctx.currentTime+f);
+				//y[1].gain.cancelScheduledValues(0);
+				if(f>0)y[1].gain.setValueAtTime(y[1].gain.value,t).linearRampToValueAtTime(0,t+f);
 				y[0].stop(t+this.pl_[plname].fade);
 			});
 			delete this.abs_[plname][x];
