@@ -46,7 +46,7 @@ class PetitAudio{
 		arg={...(this.fi_[finame]?this.fi_[finame].arg:{wet:1,dur:.001}),...arg};
 		let tmp=this.fi_[finame],init=!tmp||tmp.arg.type!=arg.type;
 		const margeset=()=>{Object.assign(tmp.arg,arg);this.fi_[finame]=tmp;},
-			apli=(ap,trg)=>{ap.cancelScheduledValues(0).setValueAtTime(ap.value,0).linearRampToValueAtTime(trg,this.ctx.currentTime+arg.dur);},
+			apli=(ap,trg)=>{const t=this.ctx.currentTime;ap.cancelScheduledValues(t).setValueAtTime(ap.value,t).linearRampToValueAtTime(trg,t+arg.dur);},
 			wetinit=(a,x)=>{
 				x={arg:a,node:[x,this.ctx.createGain(),this.ctx.createGain()],in:[0,1],out:[1,2]};
 				x.node[0].connect(x.node[2]);
