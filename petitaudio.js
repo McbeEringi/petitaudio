@@ -6,7 +6,7 @@ class PetitAudio{
 	}
 	now(){return this.ctx.currentTime;}
 	_n2nn(x){return isNaN(+x)?({c:12,d:14,e:16,f:17,g:19,a:21,b:23})[x[0].toLowerCase()]+(({'#':1,s:1})[x[1]]?x.slice(2)*12+1:x.slice(1)*12):x;}
-	irgen(fi=.1,d=2,cut=10000,ch=2,rate=this.ctx.sampleRate){
+	irgen(fi=.1,d=2.5,cut=10000,ch=2,rate=this.ctx.sampleRate){
 		return new Promise(f=>{
 			const fr=d*rate,
 				oac=new(window.OfflineAudioContext||window.webkitOfflineAudioContext)(ch,fr,rate),
