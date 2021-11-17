@@ -21,23 +21,24 @@
 		<button id="btn">btn</button>
 	</div>
 	<script id="src">
-const main=new PetitAudio()
-	.player('test',{
-		baseUrl:'https://mcbeeringi.github.io/sky/audio/instr/musicbox/',
-		notes:{
-			a3:'a3.mp3',
-			ds4:'ds4.mp3',
-			a4:'a4.mp3',
-			ds5:'ds5.mp3',
-			a5:'a5.mp3',
-			ds6:'ds6.mp3',
-			a6:'a6.mp3',
-			ds7:'ds7.mp3'
-		},
-		filters:['rev','del']
-	},()=>log.textContent+='loaded')
-	.filter('rev',{type:'reverb',fadeIn:.1,decay:3,freq:10000,wet:.5})
-	.filter('del',{type:'pingpong',delay:.3,repeat:.8});
+const main=new PetitAudio(),
+	rev=main.ctx.createConvolver();
+main.irgen().then(x=>rev.buffer=x);
+rev.connect(main.ctx.destination);
+main.player('test',{
+	baseUrl:'https://mcbeeringi.github.io/sky/audio/instr/musicbox/',
+	notes:{
+		a3:'a3.mp3',
+		ds4:'ds4.mp3',
+		a4:'a4.mp3',
+		ds5:'ds5.mp3',
+		a5:'a5.mp3',
+		ds6:'ds6.mp3',
+		a6:'a6.mp3',
+		ds7:'ds7.mp3'
+	},
+	node:[rev]
+},()=>log.textContent+='loaded');
 btn.onclick=()=>[['c5'],['d5'],['e5'],['g5'],['c6']].map((x,i)=>main.start('test',x,main.now()+i*.05));
 [-1,0,1,2].map(x=>[72,74,76,77,79,81,83].map(y=>y+x*12)).flat()
 .forEach(x=>wrap.insertAdjacentHTML('beforeend',`<p class="key" onpointerover="main.start('test',[${x}]);">${x}</p>`));
